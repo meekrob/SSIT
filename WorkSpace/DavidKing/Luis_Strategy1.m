@@ -51,14 +51,18 @@ disp("Loading WT data.");
 Model1 = Model0.loadData(DATAFILE,{'gfp','IntensityIntegers'},...
   {'Genotype','ELT-2-GFP';'RNAi','L4440'});
 Model1.fittingOptions.modelVarsToFit = [1:8];
+disp("fitting Model1 parameters to fit:"); 
+disp(Model1.parameters(Model1.fittingOptions.modelVarsToFit));
 
 disp("Loading elt7 KO data.");
 Model2 = Model0.loadData(DATAFILE,{'gfp','IntensityIntegers'; 'elt7', 'zeroes'},...
  {'Genotype','ELT-7-KO';'RNAi','L4440'}); 
-Model2.parameters(2,:) = {'kelt7',0};
+Model2.parameters(2,:) = {'kelt7',0}; % ELT-7 is knocked out in this condition, so set its production rate to 0
 % define parameters that are in model 2.
 M2parInds = [1,3,4,6,8];
 Model2.fittingOptions.modelVarsToFit = M2parInds; 
+disp("fitting Model2 parameters to fit:"); 
+disp(Model2.parameters(Model2.fittingOptions.modelVarsToFit));
 
 %%
 [~,Model1.fspOptions.bounds] = Model1.solve;
@@ -82,6 +86,7 @@ disp("Fitting...");
 
 % load ParsBrian pars0
 for iRound = 1:5
+    disp(sprintf("iRound: %d", iRound));
     pars0 = exp(fminsearch(obj,log(pars0),fitOptions))
     
     Model1.parameters(:,2) = num2cell(pars0);
@@ -89,12 +94,15 @@ for iRound = 1:5
 
     [soln1,Model1.fspOptions.bounds] = Model1.solve;
     Model1.fspOptions.bounds(6) = max(30,Model1.fspOptions.bounds(6));
+    disp("Model 1 computeLikelihood ...");
     [~,~,soln1] = Model1.computeLikelihood([],soln1.stateSpace);
 
     [soln2,Model2.fspOptions.bounds] = Model2.solve;
+    disp("Model 2 computeLikelihood ...");
     [~,~,soln2] = Model2.computeLikelihood([],soln2.stateSpace);
     Model2.fspOptions.bounds(6) = max(30,Model2.fspOptions.bounds(6));
-
+    
+    disp("Plotting.");
     Model1.makeFitPlot(soln1,1);
     Model2.makeFitPlot(soln2,1);
 end
